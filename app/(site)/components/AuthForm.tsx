@@ -4,8 +4,11 @@ import Input from "@/app/components/inputs/Input";
 import React from "react";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
 import { BsGithub, BsGoogle } from "react-icons/bs";
+import axios from "axios";
 import Button from "../../components/Button";
 import AuthSocialButton from "./AuthSocialButton";
+import toast from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 type Props = {};
 type variant = "LOGIN" | "REGISTER";
@@ -34,20 +37,60 @@ const AuthForm = (props: Props) => {
     },
   });
 
-  const onSubmit: SubmitHandler<FieldValues> = (data) => {
+  const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     setIsLoading(true);
     if (variant === "REGISTER") {
-      // Axios register
+      // Axios register /api/register
+      await axios
+        .post("/api/register", data)
+        .then(() => {
+          toast.success("Registered successfully.");
+        })
+        .catch(() => {
+          toast.error("Failed to register. Try again later.");
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
 
     if (variant === "LOGIN") {
       // NextAuth SignIn
+      await signIn("credentials", {
+        ...data,
+        redirect: false,
+      })
+        .then((callback) => {
+          if (callback?.error) {
+            toast.error("Failed to login. Try again later.");
+          }
+          if (callback?.ok) {
+            toast.success("Logged in successfully.");
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
   };
 
-  const socialAction = (action: string) => {
+  const socialAction = async (action: string) => {
     setIsLoading(true);
     // NextAuth social signin
+    signIn(action, {
+      redirect: false,
+    })
+      .then((callback) => {
+        if (callback?.error) {
+          toast.error("Failed to login. Try again later.");
+        }
+        if (callback?.ok) {
+          toast.success("Logged in successfully.");
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
