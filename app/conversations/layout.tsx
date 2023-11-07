@@ -1,22 +1,20 @@
 import React from "react";
 import Sidebar from "../components/sidebar/Sidebar";
-import getUsers from "../actions/getUsers";
-import UserList from "./components/UserList";
+import ConversationList from "./components/ConversationList";
 
 type Props = {
   children?: React.ReactNode;
 };
 
-const UsersLayout = async ({ children }: Props) => {
-  const users = await getUsers();
+const ConversationsLayout = ({ children }: Props) => {
   return (
     <Sidebar>
       <div className="h-full">
-        <UserList items={users} />
+        <ConversationList initialItems={[]} />
         {children}
       </div>
     </Sidebar>
   );
 };
 
-export default UsersLayout;
+export default ConversationsLayout;
