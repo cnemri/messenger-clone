@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import React from "react";
 import { IoClose, IoTrash } from "react-icons/io5";
 import ConfirmModal from "./ConfirmModal";
+import useActiveList from "@/app/hooks/useActiveList";
 
 type Props = {
   isOpen: boolean;
@@ -20,6 +21,8 @@ type Props = {
 
 const ProfileDrawer = ({ isOpen, onClose, data }: Props) => {
   const otherUser = useOtherUser(data);
+  const { members } = useActiveList();
+  const isActive = members.indexOf(otherUser?.email!) !== -1;
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   const joinedDate = React.useMemo(() => {
@@ -32,8 +35,8 @@ const ProfileDrawer = ({ isOpen, onClose, data }: Props) => {
 
   const statusText = React.useMemo(() => {
     if (data.isGroup) return `${data.users.length} members`;
-    return "Active";
-  }, [data]);
+    return isActive ? "Active" : "Offline";
+  }, [data, isActive]);
 
   return (
     <>

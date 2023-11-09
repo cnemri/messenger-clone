@@ -9,6 +9,9 @@ import { MdOutlineGroupAdd } from "react-icons/md";
 import ConversationBox from "./ConversationBox";
 import GroupChatModal from "./GroupChatModal";
 import { User } from "@prisma/client";
+import { useSession } from "next-auth/react";
+import { pusherClient } from "@/app/libs/pusher";
+import { find } from "lodash";
 
 type Props = {
   initialItems: FullConversationType[];
@@ -16,10 +19,58 @@ type Props = {
 };
 
 const ConversationList = ({ initialItems, users }: Props) => {
+  const session = useSession();
   const [items, setItems] =
     React.useState<FullConversationType[]>(initialItems);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const router = useRouter();
+
+  const pusherKey = React.useMemo(() => {
+    return session.data?.user?.email;
+  }, [session.data?.user?.email]);
+
+  React.useEffect(() => {
+    if (!pusherKey) {
+      return;
+    }
+
+    pusherClient.subscribe(pusherKey);
+
+    const updateHandler = (conversation: FullConversationType) => {
+      setItems((current) =>
+        current.map((currentConversation) => {
+          if (currentConversation.id === conversation.id) {
+            return {
+              ...currentConversation,
+              messages: conversation.messages,
+            };
+          }
+
+          return currentConversation;
+        })
+      );
+    };
+
+    const newHandler = (conversation: FullConversationType) => {
+      setItems((current) => {
+        if (find(current, { id: conversation.id })) {
+          return current;
+        }
+
+        return [conversation, ...current];
+      });
+    };
+
+    const removeHandler = (conversation: FullConversationType) => {
+      setItems((current) => {
+        return [...current.filter((convo) => convo.id !== conversation.id)];
+      });
+    };
+
+    pusherClient.bind("conversations:update", updateHandler);
+    pusherClient.bind("conversations:new", newHandler);
+    pusherClient.bind("conversations:remove", removeHandler);
+  }, [pusherKey, router]);
 
   const { conversationId, isOpen } = useConversation();
   return (
